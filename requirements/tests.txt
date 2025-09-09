@@ -21,4 +21,4 @@ pytest
 transformers
 ubelt
 xdoctest>=0.10.0
-yapf
+yapf==0.32.0
