@@ -1,0 +1,16 @@
+
+
+Test:
+python tools/test.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py work_dirs/no_augs_rtmdet_nano_320_8xb32_coco_finetune/best_coco_bbox_mAP_epoch_17.pth --out no_augs_general_val.pkl
+python tools/test.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py mmdet/models/_models/rtmdet_nano_pretrain.pth --out pretrain_standing_general_val.pkl
+
+Vis:
+python tools/visualize_results.py --results pretrain_standing_general_val.pkl --images data/coco_standing_general_val/val2017
+
+Export Results: 
+# This allows you to update the bboxes in gt annotations, so you can import those to mmpose for pose model testing GIVEN the detections
+python tools/convert_pkl_to_coco.py --results pretrain_standing_general_val.pkl --coco-json data/coco_standing_general_val/annotations/instances_val2017.json --output data/coco_standing_general_val/annotations/person_keypoints_val2017.json
+
+Export Model:
+Using mmdet env: run the code in test.py to torchscript export
+Using model_conversion env: torch_to_coreml.py

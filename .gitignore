@@ -111,13 +111,19 @@ data
 
 # custom
 *.pkl
+*.json
+*.mp4
 *.pkl.json
 *.log.json
 docs/modelzoo_statistics.md
 mmdet/.mim
 work_dirs/
+visualization/
 
 # Pytorch
 *.pth
+*.pt
+*.mlmodel
+*.onnx
 *.py~
 *.sh~

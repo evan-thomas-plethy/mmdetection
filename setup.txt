@@ -1,0 +1,41 @@
+ 2002  conda create -n mmdet python=3.10 -y
+ 2003  conda activate mmdet
+ 2004  pip install -r requirements/readthedocs.txt 
+ 2005  conda deactivate
+ 2006  conda activate mmdet
+ 2007  pip install .
+ 2008  python -c "import numpy as np; print(np.__version__)"
+ 2009  python -c "import torch; print(torch.__version__)"
+ 2010  conda deactivate
+ 2011  conda activate mmdet
+ 2012  python tools/train.py     configs/rtmdet/rtmdet_nano_320-8xb32.py     --work-dir ./work_dirs/rtmdet_nano_heel_slides     --cfg-options         train_dataloader.dataset.data_root=data/heel_slides         train_dataloader.dataset.ann_file=annotations/train.json         train_dataloader.dataset.data_prefix.img=train/         val_dataloader.dataset.data_root=data/heel_slides         val_dataloader.dataset.ann_file=annotations/val.json         val_dataloader.dataset.data_prefix.img=val/         model.bbox_head.num_classes=1     --amp
+ 2013  python tools/train.py     configs/rtmdet/rtmdet_nano_320_8xb32.py     --work-dir ./work_dirs/rtmdet_nano_heel_slides     --cfg-options         train_dataloader.dataset.data_root=data/heel_slides         train_dataloader.dataset.ann_file=annotations/train.json         train_dataloader.dataset.data_prefix.img=train/         val_dataloader.dataset.data_root=data/heel_slides         val_dataloader.dataset.ann_file=annotations/val.json         val_dataloader.dataset.data_prefix.img=val/         model.bbox_head.num_classes=1     --amp
+ 2014  python tools/train.py     configs/rtmdet/rtmdet_nano_320_8xb32_coco.py     --work-dir ./work_dirs/rtmdet_nano_heel_slides     --cfg-options         train_dataloader.dataset.data_root=data/heel_slides         train_dataloader.dataset.ann_file=annotations/train.json         train_dataloader.dataset.data_prefix.img=train/         val_dataloader.dataset.data_root=data/heel_slides         val_dataloader.dataset.ann_file=annotations/val.json         val_dataloader.dataset.data_prefix.img=val/         model.bbox_head.num_classes=1     --amp
+ 2015  pip install -U openmim
+ 2016  mim install mmcv==2.1.0
+ 2017  mim install mmengine==0.7.3
+ 2018  conda deactivate
+ 2019  conda activate mmdet
+ 2020  python tools/train.py     configs/rtmdet/rtmdet_nano_320_8xb32_coco.py     --work-dir ./work_dirs/rtmdet_nano_heel_slides     --cfg-options         train_dataloader.dataset.data_root=data/heel_slides         train_dataloader.dataset.ann_file=annotations/train.json         train_dataloader.dataset.data_prefix.img=train/         val_dataloader.dataset.data_root=data/heel_slides         val_dataloader.dataset.ann_file=annotations/val.json         val_dataloader.dataset.data_prefix.img=val/         model.bbox_head.num_classes=1     --amp
+ 2021  python -c "import torch; print(torch.version.cuda, torch.cuda.is_available())"
+ 2022  python -c "import mmcv; from mmcv.ops import roi_align; print('mmcv._ext is working')"
+ 2023  mim install mmcv==2.1.0
+ 2024  mim install mmengine==0.7.3
+ 2025  conda deactivate
+ 2026  conda activate mmdet
+ 2027  python tools/train.py     configs/rtmdet/rtmdet_nano_320_8xb32_coco.py     --work-dir ./work_dirs/rtmdet_nano_heel_slides     --cfg-options         train_dataloader.dataset.data_root=data/heel_slides         train_dataloader.dataset.ann_file=annotations/train.json         train_dataloader.dataset.data_prefix.img=train/         val_dataloader.dataset.data_root=data/heel_slides         val_dataloader.dataset.ann_file=annotations/val.json         val_dataloader.dataset.data_prefix.img=val/         model.bbox_head.num_classes=1     --amp
+ 2028  pip uninstall mmcv
+ 2029  pip uninstall mmengine
+ 2030  pip install -U openmim
+ 2031  mim install mmcv==2.1.0
+ 2032  mim install mmengine==0.7.3
+ 2033  conda deactivate
+ 2034  conda activate mmdet
+ 2035  python tools/train.py     configs/rtmdet/rtmdet_nano_320_8xb32_coco.py     --work-dir ./work_dirs/rtmdet_nano_heel_slides     --cfg-options         train_dataloader.dataset.data_root=data/heel_slides         train_dataloader.dataset.ann_file=annotations/train.json         train_dataloader.dataset.data_prefix.img=train/         val_dataloader.dataset.data_root=data/heel_slides         val_dataloader.dataset.ann_file=annotations/val.json         val_dataloader.dataset.data_prefix.img=val/         model.bbox_head.num_classes=1     --amp
+ 2036  pip show yapf
+ 2037  pip install -U yapf>=0.34.0
+ 2038  python tools/train.py     configs/rtmdet/rtmdet_nano_320_8xb32_coco.py     --work-dir ./work_dirs/rtmdet_nano_heel_slides     --cfg-options         train_dataloader.dataset.data_root=data/heel_slides         train_dataloader.dataset.ann_file=annotations/train.json         train_dataloader.dataset.data_prefix.img=train/         val_dataloader.dataset.data_root=data/heel_slides         val_dataloader.dataset.ann_file=annotations/val.json         val_dataloader.dataset.data_prefix.img=val/         model.bbox_head.num_classes=1     --amp
+ 2039  pip show yapf
+ 2040  pip install -U yapf>=0.32.0
+ 2041  pip install -U yapf==0.34.0
+ 2042  pip install -U yapf==0.32.0
