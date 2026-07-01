@@ -127,3 +127,7 @@ visualization/
 *.onnx
 *.py~
 *.sh~
+
+overlays/
+predictions/
+reports/
