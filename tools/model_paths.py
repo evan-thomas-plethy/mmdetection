@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-MODEL_NAME = 'rtmdet_nano_merged_gbe_v10_gbe_app_vids_v5'
+MODEL_NAME = 'rtmdet-nano_various_datasets_epoch40'
 VAL_DATA_DIRNAME = 'merged_gbe_v10_gbe_app_vids_v5'
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

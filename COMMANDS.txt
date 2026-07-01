@@ -32,8 +32,9 @@ configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py
 
 # Update when switching checkpoints / val sets (used by exported-model scripts):
 # tools/model_paths.py
-MODEL_NAME=rtmdet_nano_merged_gbe_v10_gbe_app_vids_v5
+MODEL_NAME=rtmdet-nano_various_datasets_epoch40
 VAL_DATA_DIRNAME=merged_gbe_v10_gbe_app_vids_v5
+CHECKPOINT=work_dirs/rtmdet-nano_various_datasets/epoch_40.pth
 
 Train:
 python tools/train.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py \
@@ -147,7 +148,8 @@ python tools/model_converters/publish_model.py \
 ##################################################################################
 
 Export Model (TorchScript -> CoreML/TFLite):
-# Full conversion steps live in mmdeploy/COMMANDS.txt ("To convert rtmdet to CoreML").
+# Full conversion steps live in mmdeploy/COMMANDS.txt
+# ("RTMDet-nano various_datasets epoch_40 -> CoreML + TFLite (fp32 + fp16)").
 # Summary:
 # 1. Env mmdeploy — TorchScript export:
 cd ~/visionAI/mmdeploy
@@ -156,22 +158,19 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 python tools/deploy.py \
     configs/mmdet/detection/detection_coreml_static-320.py \
     ../mmdetection/configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py \
-    ../mmdetection/work_dirs/rtmdet_nano_merged_gbe_v10_gbe_app_vids_v5/best_coco_bbox_mAP_epoch_*.pth \
-    ../mmdetection/data/merged_gbe_v10_gbe_app_vids_v5/val2017/$(ls ../mmdetection/data/merged_gbe_v10_gbe_app_vids_v5/val2017 | head -1) \
+    ../mmdetection/${CHECKPOINT} \
+    ../mmdetection/data/${VAL_DATA_DIRNAME}/val2017/$(ls ../mmdetection/data/${VAL_DATA_DIRNAME}/val2017 | head -1) \
     --work-dir work_dir/${MODEL_NAME} \
     --device cpu \
     --dump-info
 
-# 2. Env model_conversion — CoreML:
-conda deactivate && conda activate model_conversion
-cd ~/visionAI/mmdeploy
-# Update model path in tools/rtmdet_torch_to_coreml.py if needed, then:
-python tools/rtmdet_torch_to_coreml.py
+# 2. Env model_conversion — CoreML fp32 + fp16 + TFLite fp32/fp16:
+# See mmdeploy/COMMANDS.txt steps 2–4 (tools/rtmdet_model_paths.py)
 
-# 3. Env model_conversion — TFLite (optional):
-# See mmdeploy/COMMANDS.txt TFLite steps (torchscript_to_onnx.py, onnx2tf, tf_to_tflite.py)
+# CoreML val inference runs on Mac only (step 5a in mmdeploy/COMMANDS.txt).
+# TFLite val inference runs on instance (step 5b).
 
-# Exported val inference (CoreML and/or TFLite):
+# Exported val inference (TFLite on instance):
 cd ~/visionAI/mmdetection
 conda activate mmdet
 export PYTHONPATH=/home/ubuntu/visionAI/mmdetection:$PYTHONPATH
@@ -181,24 +180,33 @@ VAL_IMG=data/${VAL_DATA_DIRNAME}/val2017
 python tools/exported_export_val_predictions.py \
     --models \
         ../mmdeploy/${MODEL_NAME}.mlmodel \
+        ../mmdeploy/${MODEL_NAME}_float16.mlmodel \
         ../mmdeploy/saved_models/${MODEL_NAME}_saved_model/${MODEL_NAME}_float32.tflite \
-        ../mmdeploy/${MODEL_NAME}_int8.tflite \
+        ../mmdeploy/saved_models/${MODEL_NAME}_saved_model/${MODEL_NAME}_float16.tflite \
     --ann-file ${VAL_ANN} \
     --img-prefix ${VAL_IMG}
+# Note: .mlmodel entries require Mac + coremltools; run those separately per mmdeploy/COMMANDS.txt 5a.
 
 # Smoke test (first 20 images):
 # python tools/exported_export_val_predictions.py ... --max-samples 20 --force-rerun
 
-# Compare bbox AP (baseline vs quantized):
+# Compare bbox AP (fp32 vs fp16):
 python tools/exported_compare_ap.py \
     --predictions \
         predictions/coreml_${MODEL_NAME}_${VAL_DATA_DIRNAME}.detections.json \
-        predictions/coreml_${MODEL_NAME}_int8_${VAL_DATA_DIRNAME}.detections.json \
+        predictions/coreml_${MODEL_NAME}_float16_${VAL_DATA_DIRNAME}.detections.json \
     --ann-file ${VAL_ANN}
+
+python tools/exported_compare_ap.py \
+    --predictions \
+        predictions/tflite_${MODEL_NAME}_float32_${VAL_DATA_DIRNAME}.detections.json \
+        predictions/tflite_${MODEL_NAME}_float16_${VAL_DATA_DIRNAME}.detections.json \
+    --ann-file ${VAL_ANN} \
+    --report reports/ap_tflite_fp32_vs_fp16.txt
 
 # Validation overlays (MP4 only, GT boxes gray + prediction green/orange/magenta by precision):
 python tools/overlay_val_predictions.py \
-    --predictions predictions/tflite_${MODEL_NAME}_float32_${VAL_DATA_DIRNAME}.detections.json \
+    --predictions predictions/tflite_${MODEL_NAME}_float16_${VAL_DATA_DIRNAME}.detections.json \
     --ann-file ${VAL_ANN} \
     --images-dir ${VAL_IMG}
 
