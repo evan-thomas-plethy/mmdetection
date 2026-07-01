@@ -12,7 +12,7 @@ MLflow integration is achieved through MMEngine's visualization backend system. 
 
 ```bash
 python tools/train.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py \
-    --mlflow-tracking-uri http://35.165.139.156:5000
+    --mlflow-tracking-uri http://52.41.68.196:5000
 ```
 
 That's it! All metrics will be logged automatically.
@@ -21,7 +21,7 @@ That's it! All metrics will be logged automatically.
 
 ```bash
 python tools/train.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py \
-    --mlflow-tracking-uri http://35.165.139.156:5000 \
+    --mlflow-tracking-uri http://52.41.68.196:5000 \
     --mlflow-experiment-name "rtmdet_finetune" \
     --mlflow-run-name "baseline_v1"
 ```
@@ -30,7 +30,7 @@ python tools/train.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py \
 
 | Argument | Description | Default |
 |----------|-------------|---------|
-| `--mlflow-tracking-uri` | MLflow server URI. **Required to enable logging.** | http://35.165.139.156:5000 |
+| `--mlflow-tracking-uri` | MLflow server URI. **Required to enable logging.** | http://52.41.68.196:5000 |
 | `--mlflow-experiment-name` | Experiment name | Config filename |
 | `--mlflow-run-name` | Run name | Timestamp |
 
@@ -44,7 +44,7 @@ vis_backends = [
     dict(type='LocalVisBackend'),
     dict(
         type='MLflowVisBackend',
-        tracking_uri='http://35.165.139.156:5000',
+        tracking_uri='http://52.41.68.196:5000',
         exp_name='my_experiment',
         run_name='my_run',
     )
@@ -108,7 +108,7 @@ View your experiments at your MLflow server:
 mlflow ui
 
 # Or access remote server
-# http://35.165.139.156:5000
+# http://52.41.68.196:5000
 ```
 
 ## Requirements
@@ -137,7 +137,7 @@ The `MLflowVisBackend` approach is recommended as it's:
 
 ```
 MLflow logging enabled:
-  Tracking URI: http://35.165.139.156:5000
+  Tracking URI: http://52.41.68.196:5000
   Experiment: rtmdet_nano_320_8xb32_coco_finetune
   Run name: 20251216_235500
 ```

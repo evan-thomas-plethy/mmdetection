@@ -3,9 +3,13 @@ _base_ = 'rtmdet_l_8xb32-300e_coco.py'
 # Load pretrained checkpoint for fine-tuning
 load_from = 'https://download.openmmlab.com/mmpose/v1/projects/rtmpose/rtmdet_nano_8xb32-100e_coco-obj365-person-05d8511e.pth'
 
+# Dataset (person_keypoints JSON includes bbox fields for detection)
+data_root = 'data/merged_gbe_v10_gbe_app_vids_v5/'
+general_val_data_root = 'data/coco_general_val/'
+
 input_shape = 320
 
-# Optimized training configuration for 10k images fine-tuning
+# Optimized training configuration for fine-tuning
 train_cfg = dict(
     type='EpochBasedTrainLoop',
     max_epochs=50,  # Reduced from 300 for fine-tuning
@@ -123,19 +127,33 @@ test_pipeline = [
                    'scale_factor'))
 ]
 
-# Optimized dataloader for 10k images
+# Optimized dataloader for fine-tuning
 train_dataloader = dict(
     batch_size=32,  # Increased batch size for better stability
     num_workers=8,  # More workers for faster data loading
     persistent_workers=True,
-    dataset=dict(pipeline=train_pipeline, metainfo=dict(classes=('person', ))))
+    dataset=dict(
+        data_root=data_root,
+        ann_file='annotations/person_keypoints_train2017.json',
+        data_prefix=dict(img='train2017/'),
+        pipeline=train_pipeline,
+        metainfo=dict(classes=('person', ))))
 
 val_dataloader = dict(
     batch_size=16,  # Smaller batch size for validation
     num_workers=4,
     persistent_workers=True,
-    dataset=dict(pipeline=test_pipeline, metainfo=dict(classes=('person', ))))
+    dataset=dict(
+        data_root=data_root,
+        ann_file='annotations/person_keypoints_val2017.json',
+        data_prefix=dict(img='val2017/'),
+        pipeline=test_pipeline,
+        metainfo=dict(classes=('person', ))))
 test_dataloader = val_dataloader
+
+val_evaluator = dict(
+    ann_file=data_root + 'annotations/person_keypoints_val2017.json')
+test_evaluator = val_evaluator
 
 # Optimized hooks for fine-tuning
 custom_hooks = [
@@ -148,7 +166,27 @@ custom_hooks = [
     dict(
         type='PipelineSwitchHook',
         switch_epoch=40,  # Switch to stage2 earlier for fine-tuning
-        switch_pipeline=train_pipeline_stage2)
+        switch_pipeline=train_pipeline_stage2),
+    # General validation hook - monitors forgetting on diverse exercises
+    dict(
+        type='GeneralValHook',
+        interval=1,
+        priority=48,
+        dataloader=dict(
+            batch_size=16,
+            num_workers=4,
+            persistent_workers=True,
+            dataset=dict(
+                data_root=general_val_data_root,
+                ann_file='annotations/general_val.json',
+                data_prefix=dict(img='general_val/'),
+                pipeline=test_pipeline,
+                test_mode=True,
+                metainfo=dict(classes=('person', )))),
+        evaluator=dict(
+            type='CocoMetric',
+            ann_file=general_val_data_root + 'annotations/general_val.json',
+            metric='bbox')),
 ]
 
 # Checkpoint saving configuration

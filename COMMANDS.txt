@@ -1,16 +1,214 @@
-IMPORTANT: use cuda-12.1
+IMPORTANT: use cuda-12.1 (expect to be default)
+AND for every session:
+conda activate mmdet
+export PYTHONPATH=/home/ubuntu/visionAI/mmdetection:$PYTHONPATH
+
+tmux new -s train
+conda activate mmdet
+Ctrl + B, D to detach
+tmux attach -t train
+
+To shutdown GPU safely
+sudo shutdown -h +1
+# If need to cancel this
+sudo shutdown -c
 ##################################################################################
 
-Train: 
-python tools/train.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py --work-dir work_dirs/dummy_train
+Please note: In the past, often renamed the current dataset as data/coco.
+Do NOT do this anymore.
+
+Dataset layout (expected):
+data/merged_gbe_v10_gbe_app_vids_v5/
+  train2017/
+  val2017/
+  val2017_mirrored/   # optional, for mirrored-val testing only
+  annotations/
+    person_keypoints_train2017.json
+    person_keypoints_val2017.json
+    person_keypoints_val2017_mirrored.json
+
+Default config points at data/merged_gbe_v10_gbe_app_vids_v5/:
+configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py
+
+# Update when switching checkpoints / val sets (used by exported-model scripts):
+# tools/model_paths.py
+MODEL_NAME=rtmdet_nano_merged_gbe_v10_gbe_app_vids_v5
+VAL_DATA_DIRNAME=merged_gbe_v10_gbe_app_vids_v5
+
+Train:
+python tools/train.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py \
+    --work-dir work_dirs/rtmdet_nano_merged_gbe_v10_gbe_app_vids_v5 \
+    --mlflow-experiment-name "rtmdet_nano_merged_gbe_v10" \
+    --mlflow-run-name "v5"
+
+# Override dataset path without editing config:
+python tools/train.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py \
+    --work-dir work_dirs/rtmdet_nano_merged_gbe_v10_gbe_app_vids_v5 \
+    --cfg-options \
+        data_root=data/merged_gbe_v10_gbe_app_vids_v5/ \
+        train_dataloader.dataset.data_root=data/merged_gbe_v10_gbe_app_vids_v5/ \
+        train_dataloader.dataset.ann_file=annotations/person_keypoints_train2017.json \
+        train_dataloader.dataset.data_prefix.img=train2017/ \
+        val_dataloader.dataset.data_root=data/merged_gbe_v10_gbe_app_vids_v5/ \
+        val_dataloader.dataset.ann_file=annotations/person_keypoints_val2017.json \
+        val_dataloader.dataset.data_prefix.img=val2017/ \
+        val_evaluator.ann_file=data/merged_gbe_v10_gbe_app_vids_v5/annotations/person_keypoints_val2017.json \
+        test_evaluator.ann_file=data/merged_gbe_v10_gbe_app_vids_v5/annotations/person_keypoints_val2017.json
+
+##################################################################################
+# PyTorch val eval (bbox mAP) + pickle dump
+##################################################################################
 
 Test:
-python tools/test.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py work_dirs/dummy_train/best_coco_bbox_mAP_epoch_4.pth --out dummy_train.pkl
-python tools/test.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py mmdet/models/_models/rtmdet_nano_pretrain.pth --out pretrain_heel_slides.pkl
+# Default val set from config:
+python tools/test.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py \
+    work_dirs/rtmdet_nano_merged_gbe_v10_gbe_app_vids_v5/best_coco_bbox_mAP_epoch_*.pth \
+    --work-dir work_dirs/eval_merged_gbe_v10_gbe_app_vids_v5 \
+    --out merged_gbe_v10_gbe_app_vids_v5_val.pkl
+
+# Test on any validation set: explicit data root + ann + image folder
+python tools/test.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py \
+    work_dirs/rtmdet_nano_merged_gbe_v10_gbe_app_vids_v5/best_coco_bbox_mAP_epoch_*.pth \
+    --work-dir work_dirs/eval_merged_gbe_v10_gbe_app_vids_v5 \
+    --out merged_gbe_v10_gbe_app_vids_v5_val.pkl \
+    --cfg-options \
+        val_dataloader.dataset.data_root=data/merged_gbe_v10_gbe_app_vids_v5/ \
+        val_dataloader.dataset.ann_file=annotations/person_keypoints_val2017.json \
+        val_dataloader.dataset.data_prefix.img=val2017/ \
+        val_evaluator.ann_file=data/merged_gbe_v10_gbe_app_vids_v5/annotations/person_keypoints_val2017.json \
+        test_evaluator.ann_file=data/merged_gbe_v10_gbe_app_vids_v5/annotations/person_keypoints_val2017.json
+
+# Test on mirrored val set:
+python tools/test.py configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py \
+    work_dirs/rtmdet_nano_merged_gbe_v10_gbe_app_vids_v5/best_coco_bbox_mAP_epoch_*.pth \
+    --work-dir work_dirs/eval_merged_gbe_v10_gbe_app_vids_v5_mirrored \
+    --out merged_gbe_v10_gbe_app_vids_v5_val_mirrored.pkl \
+    --cfg-options \
+        val_dataloader.dataset.data_root=data/merged_gbe_v10_gbe_app_vids_v5/ \
+        val_dataloader.dataset.ann_file=annotations/person_keypoints_val2017_mirrored.json \
+        val_dataloader.dataset.data_prefix.img=val2017_mirrored/ \
+        val_evaluator.ann_file=data/merged_gbe_v10_gbe_app_vids_v5/annotations/person_keypoints_val2017_mirrored.json \
+        test_evaluator.ann_file=data/merged_gbe_v10_gbe_app_vids_v5/annotations/person_keypoints_val2017_mirrored.json
+
+##################################################################################
+# PyTorch val overlay (from .pkl)
+##################################################################################
 
 Vis:
-python tools/visualize_results.py --results pretrain_heel_slides.pkl --images data/coco/val2017
+python tools/visualize_results.py \
+    --results merged_gbe_v10_gbe_app_vids_v5_val.pkl \
+    --images data/merged_gbe_v10_gbe_app_vids_v5/val2017 \
+    --output visualization/merged_gbe_v10_gbe_app_vids_v5_val
+# Frame JPGs: visualization/merged_gbe_v10_gbe_app_vids_v5_val/
+# MP4:         visualization/result.mp4
 
-Export Results: 
-# This allows you to update the bboxes in gt annotations, so you can import those to mmpose for pose model testing GIVEN the detections
-python tools/convert_pkl_to_coco.py --results pretrain_standing_general_val.pkl --coco-json data/coco_standing_general_val/annotations/instances_val2017.json --output data/coco_standing_general_val/annotations/person_keypoints_val2017.json
+# If image paths in the pkl are already absolute/relative to repo root:
+python tools/visualize_results.py \
+    --results merged_gbe_v10_gbe_app_vids_v5_val.pkl \
+    --images . \
+    --output visualization/merged_gbe_v10_gbe_app_vids_v5_val
+
+Export Results:
+# Update bboxes in gt annotations so detections can be imported into mmpose for pose testing
+python tools/convert_pkl_to_coco.py \
+    --results merged_gbe_v10_gbe_app_vids_v5_val.pkl \
+    --coco-json data/merged_gbe_v10_gbe_app_vids_v5/annotations/person_keypoints_val2017.json \
+    --output data/merged_gbe_v10_gbe_app_vids_v5/annotations/person_keypoints_val2017_det.json
+
+Publish:
+python tools/model_converters/publish_model.py \
+    work_dirs/rtmdet_nano_merged_gbe_v10_gbe_app_vids_v5/best_coco_bbox_mAP_epoch_*.pth \
+    checkpoints/rtmdet_nano_merged_gbe_v10_gbe_app_vids_v5_publish.pth
+
+##################################################################################
+# Exported model val inference, bbox AP, overlays (CoreML / TFLite)
+# Analogous to mmpose/mmdeploy validation pipeline.
+#
+# Conda envs:
+#   mmdeploy         TorchScript export (tools/deploy.py)
+#   model_conversion CoreML/TFLite conversion (see mmdeploy/COMMANDS.txt)
+#   mmdet            exported val inference + bbox AP + overlays (this section)
+#
+# One-time for TFLite val/overlays in mmdet env:
+#   pip install "ai-edge-litert==2.1.5"
+# Do NOT install tensorflow into mmdet (would force numpy upgrade).
+#
+# Scripts (under mmdetection/tools/):
+#   exported_export_val_predictions.py  run exported models on val, write COCO detections JSON
+#   exported_compare_ap.py              compare bbox AP between two exported prediction JSONs
+#   overlay_val_predictions.py          render val overlay MP4 from detections JSON
+#
+# Paths / naming (relative to mmdetection/):
+#   Val annotations:  data/${VAL_DATA_DIRNAME}/annotations/person_keypoints_val2017.json
+#   Val images:       data/${VAL_DATA_DIRNAME}/val2017/
+#   Predictions:      predictions/{coreml|tflite}_{model_stem}_{dataset}.detections.json
+#   AP report:        reports/ap_exported.txt
+#   Overlay videos:   overlays/{predictions_filename}.mp4 (10 fps)
+##################################################################################
+
+Export Model (TorchScript -> CoreML/TFLite):
+# Full conversion steps live in mmdeploy/COMMANDS.txt ("To convert rtmdet to CoreML").
+# Summary:
+# 1. Env mmdeploy — TorchScript export:
+cd ~/visionAI/mmdeploy
+conda activate mmdeploy
+export PYTHONPATH=$(pwd):$PYTHONPATH
+python tools/deploy.py \
+    configs/mmdet/detection/detection_coreml_static-320.py \
+    ../mmdetection/configs/rtmdet/rtmdet_nano_320_8xb32_coco_finetune.py \
+    ../mmdetection/work_dirs/rtmdet_nano_merged_gbe_v10_gbe_app_vids_v5/best_coco_bbox_mAP_epoch_*.pth \
+    ../mmdetection/data/merged_gbe_v10_gbe_app_vids_v5/val2017/$(ls ../mmdetection/data/merged_gbe_v10_gbe_app_vids_v5/val2017 | head -1) \
+    --work-dir work_dir/${MODEL_NAME} \
+    --device cpu \
+    --dump-info
+
+# 2. Env model_conversion — CoreML:
+conda deactivate && conda activate model_conversion
+cd ~/visionAI/mmdeploy
+# Update model path in tools/rtmdet_torch_to_coreml.py if needed, then:
+python tools/rtmdet_torch_to_coreml.py
+
+# 3. Env model_conversion — TFLite (optional):
+# See mmdeploy/COMMANDS.txt TFLite steps (torchscript_to_onnx.py, onnx2tf, tf_to_tflite.py)
+
+# Exported val inference (CoreML and/or TFLite):
+cd ~/visionAI/mmdetection
+conda activate mmdet
+export PYTHONPATH=/home/ubuntu/visionAI/mmdetection:$PYTHONPATH
+VAL_ANN=data/${VAL_DATA_DIRNAME}/annotations/person_keypoints_val2017.json
+VAL_IMG=data/${VAL_DATA_DIRNAME}/val2017
+
+python tools/exported_export_val_predictions.py \
+    --models \
+        ../mmdeploy/${MODEL_NAME}.mlmodel \
+        ../mmdeploy/saved_models/${MODEL_NAME}_saved_model/${MODEL_NAME}_float32.tflite \
+        ../mmdeploy/${MODEL_NAME}_int8.tflite \
+    --ann-file ${VAL_ANN} \
+    --img-prefix ${VAL_IMG}
+
+# Smoke test (first 20 images):
+# python tools/exported_export_val_predictions.py ... --max-samples 20 --force-rerun
+
+# Compare bbox AP (baseline vs quantized):
+python tools/exported_compare_ap.py \
+    --predictions \
+        predictions/coreml_${MODEL_NAME}_${VAL_DATA_DIRNAME}.detections.json \
+        predictions/coreml_${MODEL_NAME}_int8_${VAL_DATA_DIRNAME}.detections.json \
+    --ann-file ${VAL_ANN}
+
+# Validation overlays (MP4 only, GT boxes gray + prediction green/orange/magenta by precision):
+python tools/overlay_val_predictions.py \
+    --predictions predictions/tflite_${MODEL_NAME}_float32_${VAL_DATA_DIRNAME}.detections.json \
+    --ann-file ${VAL_ANN} \
+    --images-dir ${VAL_IMG}
+
+python tools/overlay_val_predictions.py \
+    --predictions predictions/coreml_${MODEL_NAME}_float16_${VAL_DATA_DIRNAME}.detections.json \
+    --ann-file ${VAL_ANN} \
+    --images-dir ${VAL_IMG}
+
+# Smoke test: add --max-images 20
+# Output: overlays/<predictions_filename>.mp4
+
+# --- Instance -> Mac (optional: pull overlay MP4s for local review) ---
+# rsync -avz --progress visionai-gpu:/home/ubuntu/visionAI/mmdetection/overlays/*.mp4 ~/Desktop/
