@@ -4,7 +4,7 @@ _base_ = 'rtmdet_l_8xb32-300e_coco.py'
 load_from = 'https://download.openmmlab.com/mmpose/v1/projects/rtmpose/rtmdet_nano_8xb32-100e_coco-obj365-person-05d8511e.pth'
 
 # Dataset (person_keypoints JSON includes bbox fields for detection)
-data_root = 'data/merged_gbe_v10_gbe_app_vids_v5/'
+data_root = 'data/merged_gbe_v9_gbe_app_vids_v4_lyingperson_full_infiniteform_seed4_n736/'
 general_val_data_root = 'data/coco_general_val/'
 
 input_shape = 320
@@ -177,6 +177,7 @@ custom_hooks = [
             num_workers=4,
             persistent_workers=True,
             dataset=dict(
+                type='CocoDataset',
                 data_root=general_val_data_root,
                 ann_file='annotations/general_val.json',
                 data_prefix=dict(img='general_val/'),

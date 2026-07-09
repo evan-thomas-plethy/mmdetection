@@ -2,8 +2,13 @@
 
 from pathlib import Path
 
-MODEL_NAME = 'rtmdet-nano_various_datasets_epoch40'
-VAL_DATA_DIRNAME = 'merged_gbe_v10_gbe_app_vids_v5'
+MODEL_NAME = (
+    'rtmdet-nano_various_datasets_merged_gbe_v9_gbe_app_vids_v4_'
+    'lyingperson_full_infiniteform_seed4_n736'
+)
+VAL_DATA_DIRNAME = (
+    'merged_gbe_v9_gbe_app_vids_v4_lyingperson_full_infiniteform_seed4_n736'
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_ROOT = REPO_ROOT / 'data' / VAL_DATA_DIRNAME

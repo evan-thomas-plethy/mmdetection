@@ -63,6 +63,8 @@ def infer_precision_from_path(path):
         return 'int8'
     if any(tag in stem for tag in ('_fp16', '_float16', 'float_16', 'float16')):
         return 'fp16'
+    if any(tag in stem for tag in ('_float32', '_fp32', 'float_32', 'float32')):
+        return 'fp32'
     return 'fp32'
 
 
