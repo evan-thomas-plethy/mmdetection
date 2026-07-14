@@ -59,22 +59,29 @@ def preprocess_image(image_path, input_shape=(320, 320)):
     original_height, original_width = image.shape[:2]
     target_height, target_width = input_shape
 
+    # Geometry mirrors the mmdet val test_pipeline:
+    #   Resize(scale=(H, W), keep_ratio=True) -> Pad(size=(H, W), pad_val=114).
+    # keep-ratio resize: scale_factor = min(tw/w, th/h); new size uses mmcv's
+    # round-half-up rule (int(x + 0.5)) so shapes match tools/test.py exactly.
     scale = min(target_width / original_width, target_height / original_height)
-    scaled_width = int(original_width * scale)
-    scaled_height = int(original_height * scale)
-    dx = (target_width - scaled_width) / 2.0
-    dy = (target_height - scaled_height) / 2.0
+    scaled_width = int(original_width * scale + 0.5)
+    scaled_height = int(original_height * scale + 0.5)
 
     resized = cv2.resize(image, (scaled_width, scaled_height), interpolation=cv2.INTER_LINEAR)
-    padded = np.zeros((target_height, target_width, 3), dtype=np.uint8)
-    padded[int(dy):int(dy) + scaled_height, int(dx):int(dx) + scaled_width] = resized
+    # mmdet.Pad pads only the right/bottom borders with 114 gray (the RTMDet
+    # letterbox fill and ~ the ImageNet BGR channel mean), keeping content at (0, 0).
+    padded = np.full((target_height, target_width, 3), 114, dtype=np.uint8)
+    padded[:scaled_height, :scaled_width] = resized
 
+    # mmdet stores scale_factor = (new_w/w, new_h/h) and undoes boxes via 1/scale_factor;
+    # scale_x/scale_y below are that reciprocal. Offsets are (0, 0) because padding is
+    # bottom-right, so box de-letterboxing needs no translation.
     scale_x = original_width / scaled_width if scaled_width else 1.0
     scale_y = original_height / scaled_height if scaled_height else 1.0
     meta = {
         'original_size': (original_height, original_width),
         'scale_factors': (scale_x, scale_y),
-        'offsets': (dx, dy),
+        'offsets': (0.0, 0.0),
     }
     return padded, meta
 
@@ -129,7 +136,6 @@ def postprocess_detections(
 
     scale_x, scale_y = meta['scale_factors']
     dx, dy = meta['offsets']
-    original_height, original_width = meta['original_size']
 
     detections = []
     flat_indices = indices.flatten().tolist() if hasattr(indices, 'flatten') else indices
@@ -137,15 +143,14 @@ def postprocess_detections(
         x, y, width, height = nms_boxes[int(idx)]
         score = float(scores[int(idx)])
 
+        # Undo the letterbox exactly like mmdet's rescale by 1/scale_factor.
+        # offsets are (0, 0) for bottom-right padding. Boxes are NOT clamped to the
+        # image, matching mmdet's dense-head postprocess (rescale -> filter -> NMS only).
         x = (x - dx) * scale_x
         y = (y - dy) * scale_y
         width *= scale_x
         height *= scale_y
 
-        x = max(0.0, min(x, original_width - 1))
-        y = max(0.0, min(y, original_height - 1))
-        width = max(1.0, min(width, original_width - x))
-        height = max(1.0, min(height, original_height - y))
         detections.append([x, y, width, height, score])
 
     detections.sort(key=lambda item: item[4], reverse=True)

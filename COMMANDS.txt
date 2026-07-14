@@ -125,6 +125,14 @@ python tools/model_converters/publish_model.py \
 # Exported model val inference, bbox AP, overlays (CoreML / TFLite)
 # Analogous to mmpose/mmdeploy validation pipeline.
 #
+# Pre/post geometry matches the mmdet val test_pipeline (tools/test.py):
+#   Resize(scale=(320,320), keep_ratio=True) -> Pad(size=(320,320), pad_val=114)
+#   keep-ratio scale = min(320/w, 320/h); resized size = round(w*scale), round(h*scale)
+#   padding is bottom-right (content anchored at top-left), fill = 114 gray.
+#   Boxes are de-letterboxed by 1/scale_factor only (no pad offset) and are NOT
+#   clamped to the image, matching mmdet dense-head postprocess.
+#   Implemented in tools/rtmdet_exported_val_inference.py.
+#
 # Conda envs:
 #   mmdeploy         TorchScript export (tools/deploy.py)
 #   model_conversion CoreML/TFLite conversion (see mmdeploy/COMMANDS.txt)
